@@ -87,6 +87,11 @@ const Activities = ({ date, user, project }) => {
   };
 
   async function onSave() {
+    const overWork = activities.filter((a) => a.total > 8);
+    if (overWork) {
+      toast.error(`You cannot work more than 8 hours for the project: ${overWork[0].projectName}`);
+      return;
+    }
     for (let i = 0; i < activities.length; i++) {
       await api.post(`/activity`, activities[i]);
       toast.success(`Saved ${activities[i].projectName}`);
@@ -165,7 +170,7 @@ const Activities = ({ date, user, project }) => {
                         <div>{`${getTotal()} / ${getWorkingDays()} days`}</div>
                       </div>
                     </th>
-                    {days.map((e, i) => {
+                    {days.map((_, i) => {
                       const v = activities.reduce((acc, a) => {
                         if (!a.detail[i]) return acc;
                         return acc + a.detail[i].value;
@@ -211,7 +216,7 @@ const Activities = ({ date, user, project }) => {
                                 <textarea
                                   value={e.comment}
                                   onChange={(e) => onUpdateComment(i, e.target.value)}
-                                  placeholder={`Please add a comment on what you deliver on ${e.project} (We need to show value created to clients)`}
+                                  placeholder={`Please add a comment on what you deliver on ${e.projectName} (We need to show value created to clients)`}
                                   rows={6}
                                   className="w-full text-sm pt-2 pl-2"
                                 />
@@ -243,7 +248,10 @@ const Activities = ({ date, user, project }) => {
 const Field = ({ value = 0, onChange, invoiced, ...rest }) => {
   let bgColor = invoiced === "yes" ? "bg-[#F0F0F0]" : "bg-[white]";
   let textColor = "text-[#000]";
-  if (value >= 7) {
+  // We can't work more than 8 hours during the day (in theory of course)
+  if (value > 8) {
+    bgColor = "bg-[#FF0000]";
+  } else if (value >= 7) {
     bgColor = "bg-[#216E39]";
     textColor = "text-[#fff]";
   } else if (value >= 5) {
@@ -263,6 +271,7 @@ const Field = ({ value = 0, onChange, invoiced, ...rest }) => {
         disabled={invoiced === "yes"}
         value={value}
         min={0}
+        max={8}
         {...rest}
         type="number"
         step="0.1"
